@@ -45,6 +45,28 @@ const technicalQuestions = [
   "How would you investigate a page that becomes slow as more users arrive?",
 ];
 
+const sampleFeedback = {
+  summary:
+    "You completed the practice session. Your response shows a solid starting point—now focus on making your impact easier to understand.",
+  strengths: [
+    {
+      title: "You gave context",
+      detail:
+        "You started with enough background for an interviewer to understand the situation.",
+    },
+    {
+      title: "You focused on your contribution",
+      detail:
+        "You kept the answer centered on what you did, rather than only describing the team.",
+    },
+  ],
+  nextStep: {
+    title: "Make the result more concrete",
+    detail:
+      "End your answer with a specific outcome, number, or lesson learned so the interviewer understands the impact.",
+  },
+};
+
 type Screen = "setup" | "interview" | "complete";
 
 function App() {
@@ -152,9 +174,138 @@ function InterviewScreen({ mode, role, company, question, answer, isRecording, o
       <aside className="rounded-3xl bg-violet-50 p-6 xl:self-start"><div className="flex items-center gap-2 text-violet-800"><Lightbulb size={19} aria-hidden="true" /><p className="font-[Lexend] font-semibold">A quick structure</p></div><ol className="mt-5 space-y-4 text-sm leading-6 text-violet-950"><li><span className="font-semibold">Situation</span><br />Set the context in one or two sentences.</li><li><span className="font-semibold">Task</span><br />Explain what you were responsible for.</li><li><span className="font-semibold">Action</span><br />Focus on the choices you made.</li><li><span className="font-semibold">Result</span><br />Share what changed and what you learned.</li></ol><p className="mt-6 border-t border-violet-200 pt-4 text-sm leading-6 text-violet-900">You can pause at any time. There is no live scoring while you speak.</p></aside></div></section>;
 }
 
-function CompleteScreen({ role, mode, answer, onPracticeAgain, onBack }: { role: string; mode: string; answer: string; onPracticeAgain: () => void; onBack: () => void }) {
+function CompleteScreen({
+  role,
+  mode,
+  answer,
+  onPracticeAgain,
+  onBack,
+}: {
+  role: string;
+  mode: string;
+  answer: string;
+  onPracticeAgain: () => void;
+  onBack: () => void;
+}) {
   const hasNotes = answer.trim().length > 0;
-  return <section className="animate-in p-5 sm:p-8 lg:p-10"><button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-violet-700 transition hover:text-violet-950"><ArrowLeft size={16} aria-hidden="true" /> Back to practice setup</button><div className="mx-auto mt-12 max-w-2xl"><div className="grid size-14 place-items-center rounded-2xl bg-pink-100 text-pink-600"><CheckCircle2 size={28} aria-hidden="true" /></div><p className="mt-7 text-sm font-semibold text-violet-700">Response complete</p><h1 className="mt-2 font-[Lexend] text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">Nice work showing up for the hard part.</h1><p className="mt-4 max-w-xl text-lg leading-8 text-slate-600">You completed a representative {mode.toLowerCase()} response for a {role} interview. This local sample does not generate AI feedback yet.</p><section className="mt-8 rounded-3xl bg-violet-50 p-6"><p className="font-[Lexend] text-lg font-semibold">Your next useful step</p><p className="mt-2 leading-7 text-violet-950">Listen back for one place where you can make the outcome more concrete. Add a number, a result, or what you learned from the experience.</p>{hasNotes && <p className="mt-4 rounded-xl bg-white px-4 py-3 text-sm text-slate-700">Your answer notes are ready to revisit in this session.</p>}</section><div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={onPracticeAgain} className="inline-flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-3 font-semibold text-white transition hover:bg-pink-400"><RotateCcw size={18} aria-hidden="true" /> Practice another answer</button><button type="button" onClick={onBack} className="rounded-xl border border-violet-200 px-5 py-3 font-semibold text-violet-800 transition hover:border-violet-400 hover:bg-violet-50">Adjust session setup</button></div></div></section>;
+
+  return (
+    <section className="animate-in p-5 sm:p-8 lg:p-10">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-violet-700 transition hover:text-violet-950"
+      >
+        <ArrowLeft size={16} aria-hidden="true" />
+        Back to practice setup
+      </button>
+
+      <div className="mx-auto mt-10 max-w-4xl">
+        <div className="grid size-14 place-items-center rounded-2xl bg-pink-100 text-pink-600">
+          <CheckCircle2 size={28} aria-hidden="true" />
+        </div>
+
+        <p className="mt-7 text-sm font-semibold text-violet-700">
+          Practice feedback
+        </p>
+
+        <h1 className="mt-2 font-[Lexend] text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+          A useful reflection, not a score.
+        </h1>
+
+        <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+          Here is representative feedback for your {mode.toLowerCase()}{" "}
+          practice response for a {role} interview.
+        </p>
+
+        <section className="mt-8 rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8">
+          <div className="flex items-center gap-2 text-violet-200">
+            <Sparkles size={18} aria-hidden="true" />
+            <p className="font-semibold">Your reflection</p>
+          </div>
+
+          <p className="mt-5 max-w-2xl font-[Lexend] text-xl font-semibold leading-8 tracking-[-0.02em]">
+            {sampleFeedback.summary}
+          </p>
+        </section>
+
+        <section className="mt-8">
+          <p className="text-sm font-semibold text-violet-700">
+            What is already working
+          </p>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {sampleFeedback.strengths.map((strength) => (
+              <article
+                key={strength.title}
+                className="rounded-2xl border border-violet-100 p-5"
+              >
+                <CheckCircle2
+                  size={20}
+                  className="text-violet-600"
+                  aria-hidden="true"
+                />
+
+                <h2 className="mt-4 font-[Lexend] text-lg font-semibold tracking-[-0.02em]">
+                  {strength.title}
+                </h2>
+
+                <p className="mt-2 leading-7 text-slate-600">
+                  {strength.detail}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-3xl bg-violet-50 p-6 sm:p-8">
+          <div className="flex items-center gap-2 text-violet-800">
+            <Lightbulb size={20} aria-hidden="true" />
+            <p className="font-[Lexend] text-lg font-semibold">
+              Your next useful step
+            </p>
+          </div>
+
+          <h2 className="mt-5 font-[Lexend] text-2xl font-semibold tracking-[-0.03em] text-violet-950">
+            {sampleFeedback.nextStep.title}
+          </h2>
+
+          <p className="mt-2 max-w-2xl leading-7 text-violet-950">
+            {sampleFeedback.nextStep.detail}
+          </p>
+        </section>
+
+        {hasNotes && (
+          <section className="mt-6 rounded-2xl border border-violet-100 p-5">
+            <p className="font-semibold text-slate-900">Your response notes</p>
+
+            <p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">
+              {answer}
+            </p>
+          </section>
+        )}
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={onPracticeAgain}
+            className="inline-flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-3 font-semibold text-white transition hover:bg-pink-400"
+          >
+            <RotateCcw size={18} aria-hidden="true" />
+            Practice again
+          </button>
+
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-xl border border-violet-200 px-5 py-3 font-semibold text-violet-800 transition hover:border-violet-400 hover:bg-violet-50"
+          >
+            Adjust session setup
+          </button>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function formatTime(totalSeconds: number) {
