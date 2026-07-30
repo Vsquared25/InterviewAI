@@ -11,6 +11,7 @@ import { Sidebar } from "./components/Sidebar";
 import { SetupScreen } from "./components/SetupScreen";
 import { InterviewScreen } from "./components/InterviewScreen";
 import { CompleteScreen } from "./components/CompleteScreen";
+import type { AnswerRecord } from "./types/interview";
 
 /*
 THESIS: A practice studio, not a report card; the interview screen keeps the candidate focused on one spoken answer.
@@ -34,6 +35,7 @@ function App() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 const [resumeError, setResumeError] = useState("");
@@ -52,10 +54,19 @@ const question = questions[questionIndex];
     setAnswer("");
     setElapsedSeconds(0);
     setQuestionIndex(0);
+    setAnswers([]);
   };
 
-  const finishResponse = () => {
+const finishResponse = () => {
   setIsRecording(false);
+
+  const completedAnswer = {
+    question,
+    answer: answer.trim(),
+  };
+
+  const completedAnswers = [...answers, completedAnswer];
+  setAnswers(completedAnswers);
 
   const isLastQuestion = questionIndex === questions.length - 1;
 
@@ -156,7 +167,7 @@ totalQuestions={questions.length}
   onFinish={finishResponse}
 />
         ) : (
-          <CompleteScreen role={role} mode={mode} answer={answer} onPracticeAgain={startSession} onBack={() => setScreen("setup")} />
+          <CompleteScreen role={role} mode={mode} answer={answer} answers={answers} onPracticeAgain={startSession} onBack={() => setScreen("setup")} />
         )}
       </div>
     </main>

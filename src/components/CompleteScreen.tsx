@@ -5,10 +5,10 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react";
-import {
-  sampleFeedback,
-  type InterviewMode,
-} from "../data/interviewData";
+import type { InterviewMode } from "../data/interviewData";
+import { analyzeAnswers } from "../lib/answerFeedback";
+
+import type { AnswerRecord } from "../types/interview";
 
 export function CompleteScreen({
   role,
@@ -16,14 +16,17 @@ export function CompleteScreen({
   answer,
   onPracticeAgain,
   onBack,
+  answers,
 }: {
   role: string;
   mode: InterviewMode;
   answer: string;
   onPracticeAgain: () => void;
   onBack: () => void;
+  answers: AnswerRecord[];
 }) {
   const hasNotes = answer.trim().length > 0;
+  const feedback = analyzeAnswers(answers);
 
   return (
     <section className="animate-in p-5 sm:p-8 lg:p-10">
@@ -50,8 +53,9 @@ export function CompleteScreen({
         </h1>
 
         <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-          Here is representative feedback for your {mode.toLowerCase()}{" "}
-          practice response for a {role} interview.
+          You completed {answers.length}{" "}
+{answers.length === 1 ? "response" : "responses"} in this{" "}
+{mode.toLowerCase()} practice session for a {role} interview.
         </p>
 
         <section className="mt-8 rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8">
@@ -61,7 +65,8 @@ export function CompleteScreen({
           </div>
 
           <p className="mt-5 max-w-2xl font-[Lexend] text-xl font-semibold leading-8 tracking-[-0.02em]">
-            {sampleFeedback.summary}
+            Your feedback is based on the responses you saved in this session. Use the
+patterns below as a starting point for your next practice round.
           </p>
         </section>
 
@@ -71,7 +76,7 @@ export function CompleteScreen({
           </p>
 
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {sampleFeedback.strengths.map((strength) => (
+            {feedback.strengths.map((strength) => (
               <article
                 key={strength.title}
                 className="rounded-2xl border border-violet-100 p-5"
@@ -103,11 +108,11 @@ export function CompleteScreen({
           </div>
 
           <h2 className="mt-5 font-[Lexend] text-2xl font-semibold tracking-[-0.03em] text-violet-950">
-            {sampleFeedback.nextStep.title}
+            {feedback.nextStep.title}
           </h2>
 
           <p className="mt-2 max-w-2xl leading-7 text-violet-950">
-            {sampleFeedback.nextStep.detail}
+            {feedback.nextStep.detail}
           </p>
         </section>
 

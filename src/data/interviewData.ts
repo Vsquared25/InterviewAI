@@ -58,24 +58,3 @@ export function getQuestionsForSession(
   return [tailoredFirstQuestion, ...baseQuestions.slice(1)];
 }
 
-export const sampleFeedback = {
-  summary:
-    "You completed the practice session. Your response shows a solid starting point—now focus on making your impact easier to understand.",
-  strengths: [
-    {
-      title: "You gave context",
-      detail:
-        "You started with enough background for an interviewer to understand the situation.",
-    },
-    {
-      title: "You focused on your contribution",
-      detail:
-        "You kept the answer centered on what you did, rather than only describing the team.",
-    },
-  ],
-  nextStep: {
-    title: "Make the result more concrete",
-    detail:
-      "End your answer with a specific outcome, number, or lesson learned so the interviewer understands the impact.",
-  },
-};
