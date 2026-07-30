@@ -19,6 +19,45 @@ export const questionsByMode: Record<InterviewMode, string[]> = {
   ],
 };
 
+const technicalSkills = [
+  "React",
+  "TypeScript",
+  "JavaScript",
+  "Python",
+  "Java",
+  "C++",
+  "SQL",
+  "Git",
+  "Node.js",
+  "AWS",
+  "Docker",
+  "Data Analysis",
+  "Machine Learning",
+];
+
+export function getQuestionsForSession(
+  mode: InterviewMode,
+  resumeSkills: string[],
+) {
+  const baseQuestions = questionsByMode[mode];
+
+  const relevantSkill =
+    mode === "Technical"
+      ? resumeSkills.find((skill) => technicalSkills.includes(skill))
+      : resumeSkills[0];
+
+  if (!relevantSkill) {
+    return baseQuestions;
+  }
+
+  const tailoredFirstQuestion =
+    mode === "Behavioral"
+      ? `Tell me about a project where you used ${relevantSkill}. What was the challenge, what did you do, and what was the outcome?`
+      : `Tell me about a project where you used ${relevantSkill}. What technical decision did you make, and what tradeoff did you consider?`;
+
+  return [tailoredFirstQuestion, ...baseQuestions.slice(1)];
+}
+
 export const sampleFeedback = {
   summary:
     "You completed the practice session. Your response shows a solid starting point—now focus on making your impact easier to understand.",
