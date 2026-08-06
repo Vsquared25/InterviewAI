@@ -1,9 +1,13 @@
+import { useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronRight,
   MessageSquareText,
 } from "lucide-react";
 import { getSavedSessions } from "../lib/sessionStorage";
+import type { SavedSession } from "../types/interview";
+import { SessionDetails } from "./SessionDetails";
 
 export function ProgressScreen({
   onBackToPractice,
@@ -11,6 +15,17 @@ export function ProgressScreen({
   onBackToPractice: () => void;
 }) {
   const sessions = getSavedSessions();
+  const [selectedSession, setSelectedSession] =
+    useState<SavedSession | null>(null);
+
+  if (selectedSession) {
+    return (
+      <SessionDetails
+        session={selectedSession}
+        onBack={() => setSelectedSession(null)}
+      />
+    );
+  }
 
   return (
     <section className="animate-in p-5 sm:p-8 lg:p-10">
@@ -60,9 +75,13 @@ export function ProgressScreen({
           {sessions.map((session) => (
             <article
               key={session.id}
-              className="rounded-2xl border border-violet-100 p-5 sm:p-6"
+              className="rounded-2xl border border-violet-100 transition hover:border-violet-300 hover:bg-violet-50"
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => setSelectedSession(session)}
+                className="flex w-full flex-wrap items-start justify-between gap-4 p-5 text-left sm:p-6"
+              >
                 <div>
                   <p className="font-[Lexend] text-lg font-semibold tracking-[-0.02em]">
                     {session.role}
@@ -73,13 +92,17 @@ export function ProgressScreen({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm font-semibold text-violet-800">
-                  <CalendarDays size={16} aria-hidden="true" />
-                  {new Date(session.completedAt).toLocaleDateString()}
-                </div>
-              </div>
+                <div className="flex items-center gap-3 text-sm font-semibold text-violet-800">
+                  <span className="inline-flex items-center gap-2">
+                    <CalendarDays size={16} aria-hidden="true" />
+                    {new Date(session.completedAt).toLocaleDateString()}
+                  </span>
 
-              <p className="mt-5 border-t border-violet-100 pt-4 text-sm text-slate-600">
+                  <ChevronRight size={18} aria-hidden="true" />
+                </div>
+              </button>
+
+              <p className="border-t border-violet-100 px-5 py-4 text-sm text-slate-600 sm:px-6">
                 {session.answers.length}{" "}
                 {session.answers.length === 1 ? "response" : "responses"}{" "}
                 saved locally
