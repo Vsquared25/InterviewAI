@@ -26,6 +26,34 @@ const resultWords = [
   "%",
 ];
 
+const fillerPatterns = [
+  { phrase: "um", pattern: /\bum+\b/gi },
+  { phrase: "uh", pattern: /\buh+\b/gi },
+  { phrase: "you know", pattern: /\byou know\b/gi },
+  { phrase: "kind of", pattern: /\bkind of\b/gi },
+  { phrase: "sort of", pattern: /\bsort of\b/gi },
+];
+
+export type FillerPhrase = {
+  phrase: string;
+  count: number;
+};
+
+export function findFillerPhrases(
+  answers: AnswerRecord[],
+): FillerPhrase[] {
+  const combinedAnswers = answers
+    .map((answerRecord) => answerRecord.answer)
+    .join(" ");
+
+  return fillerPatterns
+    .map(({ phrase, pattern }) => ({
+      phrase,
+      count: (combinedAnswers.match(pattern) ?? []).length,
+    }))
+    .filter((fillerPhrase) => fillerPhrase.count > 0);
+}
+
 export function analyzeAnswers(answers: AnswerRecord[]) {
   const combinedAnswers = answers
     .map((answerRecord) => answerRecord.answer)
@@ -45,6 +73,8 @@ export function analyzeAnswers(answers: AnswerRecord[]) {
     .trim()
     .split(/\s+/)
     .filter(Boolean).length;
+
+    const fillerPhrases = findFillerPhrases(answers);
 
   const strengths = [];
 
@@ -87,5 +117,6 @@ export function analyzeAnswers(answers: AnswerRecord[]) {
   return {
     strengths: strengths.slice(0, 2),
     nextStep,
+    fillerPhrases
   };
 }

@@ -69,6 +69,45 @@ export function CompleteScreen({
 patterns below as a starting point for your next practice round.
           </p>
         </section>
+        {feedback.fillerPhrases.length > 0 && (
+  <section className="mt-6 rounded-3xl border border-violet-100 p-6 sm:p-8">
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="text-sm font-semibold text-violet-700">
+          Typed-note pattern
+        </p>
+
+        <h2 className="mt-1 font-[Lexend] text-xl font-semibold tracking-[-0.02em]">
+          Words to pause on
+        </h2>
+      </div>
+
+      <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-800">
+        Not a score
+      </span>
+    </div>
+
+    <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+      These phrases are common when thinking out loud. Notice them, pause,
+      and continue with your next point.
+    </p>
+
+    <div className="mt-5 flex flex-wrap gap-3">
+      {feedback.fillerPhrases.map((fillerPhrase) => (
+        <div
+          key={fillerPhrase.phrase}
+          className="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3 text-violet-950"
+        >
+          <span className="font-semibold">{fillerPhrase.phrase}</span>
+          <span className="text-sm text-violet-800">
+            {fillerPhrase.count}{" "}
+            {fillerPhrase.count === 1 ? "time" : "times"}
+          </span>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
 
         <section className="mt-8">
           <p className="text-sm font-semibold text-violet-700">
