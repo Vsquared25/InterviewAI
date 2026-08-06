@@ -6,7 +6,7 @@ import {
 
 import { extractResumeText } from "./lib/resume";
 import { findResumeSkills } from "./lib/resumeProfile";
-import { saveSession } from "./lib/sessionStorage";
+import { saveCloudSession } from "./lib/supabaseSessions";
 import type { Screen } from "./types/app";
 import { Sidebar } from "./components/Sidebar";
 import { SetupScreen } from "./components/SetupScreen";
@@ -14,6 +14,8 @@ import { InterviewScreen } from "./components/InterviewScreen";
 import { CompleteScreen } from "./components/CompleteScreen";
 import { ProgressScreen } from "./components/ProgressScreen";
 import type { AnswerRecord } from "./types/interview";
+import { AuthScreen } from "./components/AuthScreen";
+import { supabase } from "./lib/supabase";
 
 /*
 THESIS: A practice studio, not a report card; the interview screen keeps the candidate focused on one spoken answer.
@@ -49,6 +51,9 @@ const resumeSkills = findResumeSkills(resumeText);
 const questions = getQuestionsForSession(mode, resumeSkills);
 
 const question = questions[questionIndex];
+const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+const [isAuthenticated, setIsAuthenticated] = useState(false);
+const [sessionSaveError, setSessionSaveError] = useState("");
 
   const startSession = () => {
     setScreen("interview");
@@ -57,9 +62,10 @@ const question = questions[questionIndex];
     setElapsedSeconds(0);
     setQuestionIndex(0);
     setAnswers([]);
+    setSessionSaveError("");
   };
 
-const finishResponse = () => {
+const finishResponse = async () => {
   setIsRecording(false);
 
   const completedAnswer = {
@@ -73,19 +79,27 @@ const finishResponse = () => {
   const isLastQuestion = questionIndex === questions.length - 1;
 
   if (isLastQuestion) {
-  saveSession({
-    id: crypto.randomUUID(),
-    completedAt: new Date().toISOString(),
-    mode,
-    role,
-    company,
-    answers: completedAnswers,
-    resumeSkills,
-  });
+    setSessionSaveError("");
 
-  setScreen("complete");
-  return;
-}
+    try {
+      await saveCloudSession({
+        id: crypto.randomUUID(),
+        completedAt: new Date().toISOString(),
+        mode,
+        role,
+        company,
+        answers: completedAnswers,
+        resumeSkills,
+      });
+    } catch {
+      setSessionSaveError(
+        "Your feedback is ready, but this session could not be saved to your account.",
+      );
+    }
+
+    setScreen("complete");
+    return;
+  }
 
   setQuestionIndex((currentIndex) => currentIndex + 1);
   setElapsedSeconds(0);
@@ -140,7 +154,28 @@ const handleResumeChange = async (file: File | undefined) => {
   }
 };
 
-  useEffect(() => {
+useEffect(() => {
+  const checkSession = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    setIsAuthenticated(Boolean(session));
+    setIsCheckingAuth(false);
+  };
+
+  void checkSession();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    setIsAuthenticated(Boolean(session));
+  });
+
+  return () => subscription.unsubscribe();
+}, []);  
+
+useEffect(() => {
   if (!isRecording) return;
 
   const timer = window.setInterval(() => {
@@ -149,6 +184,18 @@ const handleResumeChange = async (file: File | undefined) => {
 
   return () => window.clearInterval(timer);
 }, [isRecording]);
+
+if (isCheckingAuth) {
+  return (
+    <main className="grid min-h-screen place-items-center bg-[#faf5ff] p-6 text-slate-900">
+      <p className="font-[Lexend] font-semibold">Loading InterviewAI…</p>
+    </main>
+  );
+}
+
+if (!isAuthenticated) {
+  return <AuthScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+}
 
   return (
     <main className="min-h-screen bg-[#faf5ff] px-4 py-5 text-slate-900 sm:px-6 lg:px-8">
@@ -186,6 +233,7 @@ totalQuestions={questions.length}
     answers={answers}
     onPracticeAgain={startSession}
     onBack={() => setScreen("setup")}
+    saveError={sessionSaveError}
   />
 ) : (
   <ProgressScreen onBackToPractice={() => setScreen("setup")} />

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
   ChevronRight,
   MessageSquareText,
 } from "lucide-react";
-import { getSavedSessions } from "../lib/sessionStorage";
+import { getCloudSessions } from "../lib/supabaseSessions";
 import type { SavedSession } from "../types/interview";
 import { SessionDetails } from "./SessionDetails";
 
@@ -14,9 +14,38 @@ export function ProgressScreen({
 }: {
   onBackToPractice: () => void;
 }) {
-  const sessions = getSavedSessions();
+  const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [selectedSession, setSelectedSession] =
     useState<SavedSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const loadSessions = async () => {
+    setIsLoading(true);
+    setLoadError("Could not load your saved sessions. Please try again.");
+
+    try {
+      const cloudSessions = await getCloudSessions();
+      setSessions(cloudSessions);
+    } catch (error) {
+  console.error("Could not load saved sessions:", error);
+
+  const errorMessage =
+    error &&
+    typeof error === "object" &&
+    "message" in error
+      ? String(error.message)
+      : "We could not load your saved sessions. Check your connection and try again.";
+
+  setLoadError(errorMessage);
+} finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSessions();
+  }, []);
 
   if (selectedSession) {
     return (
@@ -53,7 +82,27 @@ export function ProgressScreen({
         </p>
       </div>
 
-      {sessions.length === 0 ? (
+      {isLoading ? (
+        <section className="mt-10 rounded-3xl bg-violet-50 p-6 sm:p-8">
+          <p className="font-[Lexend] text-lg font-semibold">
+            Loading your saved sessions…
+          </p>
+        </section>
+      ) : loadError ? (
+        <section className="mt-10 rounded-3xl bg-pink-50 p-6 sm:p-8">
+          <p role="alert" className="font-semibold text-pink-700">
+            {loadError}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void loadSessions()}
+            className="mt-4 rounded-xl bg-white px-4 py-2 font-semibold text-pink-700"
+          >
+            Try again
+          </button>
+        </section>
+      ) : sessions.length === 0 ? (
         <section className="mt-10 rounded-3xl bg-violet-50 p-6 sm:p-8">
           <MessageSquareText
             size={26}
@@ -67,7 +116,7 @@ export function ProgressScreen({
 
           <p className="mt-2 max-w-xl leading-7 text-violet-950">
             Complete a mock interview to save its role, question responses,
-            and feedback on this device.
+            and feedback to your account.
           </p>
         </section>
       ) : (
@@ -105,7 +154,7 @@ export function ProgressScreen({
               <p className="border-t border-violet-100 px-5 py-4 text-sm text-slate-600 sm:px-6">
                 {session.answers.length}{" "}
                 {session.answers.length === 1 ? "response" : "responses"}{" "}
-                saved locally
+                saved to your account
               </p>
             </article>
           ))}

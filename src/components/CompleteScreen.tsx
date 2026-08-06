@@ -17,6 +17,7 @@ export function CompleteScreen({
   onPracticeAgain,
   onBack,
   answers,
+  saveError
 }: {
   role: string;
   mode: InterviewMode;
@@ -24,6 +25,7 @@ export function CompleteScreen({
   onPracticeAgain: () => void;
   onBack: () => void;
   answers: AnswerRecord[];
+  saveError: string;
 }) {
   const hasNotes = answer.trim().length > 0;
   const feedback = analyzeAnswers(answers);
@@ -56,6 +58,11 @@ export function CompleteScreen({
           You completed {answers.length}{" "}
 {answers.length === 1 ? "response" : "responses"} in this{" "}
 {mode.toLowerCase()} practice session for a {role} interview.
+{saveError && (
+  <p role="alert" className="mt-4 text-sm font-semibold text-pink-700">
+    {saveError}
+  </p>
+)}
         </p>
 
         <section className="mt-8 rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8">
