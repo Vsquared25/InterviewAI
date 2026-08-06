@@ -6,11 +6,13 @@ import {
 
 import { extractResumeText } from "./lib/resume";
 import { findResumeSkills } from "./lib/resumeProfile";
+import { saveSession } from "./lib/sessionStorage";
 import type { Screen } from "./types/app";
 import { Sidebar } from "./components/Sidebar";
 import { SetupScreen } from "./components/SetupScreen";
 import { InterviewScreen } from "./components/InterviewScreen";
 import { CompleteScreen } from "./components/CompleteScreen";
+import { ProgressScreen } from "./components/ProgressScreen";
 import type { AnswerRecord } from "./types/interview";
 
 /*
@@ -71,9 +73,19 @@ const finishResponse = () => {
   const isLastQuestion = questionIndex === questions.length - 1;
 
   if (isLastQuestion) {
-    setScreen("complete");
-    return;
-  }
+  saveSession({
+    id: crypto.randomUUID(),
+    completedAt: new Date().toISOString(),
+    mode,
+    role,
+    company,
+    answers: completedAnswers,
+    resumeSkills,
+  });
+
+  setScreen("complete");
+  return;
+}
 
   setQuestionIndex((currentIndex) => currentIndex + 1);
   setElapsedSeconds(0);
@@ -141,7 +153,7 @@ const handleResumeChange = async (file: File | undefined) => {
   return (
     <main className="min-h-screen bg-[#faf5ff] px-4 py-5 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto grid min-h-[calc(100vh-2.5rem)] max-w-7xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_70px_rgba(76,29,149,0.14)] lg:grid-cols-[220px_1fr]">
-        <Sidebar screen={screen} />
+        <Sidebar screen={screen} onNavigate={setScreen} />
         {screen === "setup" ? (
           <SetupScreen mode={mode} role={role} company={company} question={question} setMode={setMode} setRole={setRole} setCompany={setCompany} onStart={startSession} resumeFile={resumeFile}
   resumeError={resumeError}
@@ -166,9 +178,18 @@ totalQuestions={questions.length}
 }}
   onFinish={finishResponse}
 />
-        ) : (
-          <CompleteScreen role={role} mode={mode} answer={answer} answers={answers} onPracticeAgain={startSession} onBack={() => setScreen("setup")} />
-        )}
+        ) : screen === "complete" ? (
+  <CompleteScreen
+    role={role}
+    mode={mode}
+    answer={answer}
+    answers={answers}
+    onPracticeAgain={startSession}
+    onBack={() => setScreen("setup")}
+  />
+) : (
+  <ProgressScreen onBackToPractice={() => setScreen("setup")} />
+)}
       </div>
     </main>
   );

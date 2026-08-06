@@ -1,1 +1,1 @@
-export type Screen = "setup" | "interview" | "complete";
+export type Screen = "setup" | "interview" | "complete" | "progress";

@@ -7,7 +7,13 @@ import {
 } from "lucide-react";
 import type { Screen } from "../types/app";
 
-export function Sidebar({ screen }: { screen: Screen }) {
+export function Sidebar({
+  screen,
+  onNavigate,
+}: {
+  screen: Screen;
+  onNavigate: (screen: Screen) => void;
+}) {
   return (
     <aside className="flex flex-col border-b border-violet-100 bg-[#f7f3fd] p-5 lg:border-r lg:border-b-0">
       <div className="flex items-center gap-3">
@@ -30,10 +36,22 @@ export function Sidebar({ screen }: { screen: Screen }) {
         <NavItem
           icon={<MessageSquareMore size={18} />}
           label="Practice"
-          active
+          active={screen !== "progress"}
+          onClick={() => onNavigate("setup")}
         />
-        <NavItem icon={<BarChart3 size={18} />} label="Progress" />
-        <NavItem icon={<BookOpen size={18} />} label="Question bank" />
+
+        <NavItem
+          icon={<BarChart3 size={18} />}
+          label="Progress"
+          active={screen === "progress"}
+          onClick={() => onNavigate("progress")}
+        />
+
+        <NavItem
+          icon={<BookOpen size={18} />}
+          label="Question bank"
+          disabled
+        />
       </nav>
 
       <div className="mt-8 rounded-2xl bg-white p-4 shadow-sm lg:mt-auto">
@@ -62,19 +80,25 @@ function NavItem({
   icon,
   label,
   active = false,
+  onClick,
+  disabled = false,
 }: {
   icon: ReactNode;
   label: string;
   active?: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
+      disabled={disabled}
       className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
         active
           ? "bg-violet-600 text-white shadow-md shadow-violet-200"
           : "text-violet-950 hover:bg-white"
-      }`}
+      } ${disabled ? "cursor-not-allowed opacity-50 hover:bg-transparent" : ""}`}
     >
       {icon}
       {label}
