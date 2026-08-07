@@ -22,7 +22,7 @@ export function ProgressScreen({
 
   const loadSessions = async () => {
     setIsLoading(true);
-    setLoadError("Could not load your saved sessions. Please try again.");
+    setLoadError("");
 
     try {
       const cloudSessions = await getCloudSessions();
@@ -30,18 +30,13 @@ export function ProgressScreen({
     } catch (error) {
   console.error("Could not load saved sessions:", error);
 
-  const errorMessage =
-    error &&
-    typeof error === "object" &&
-    "message" in error
-      ? String(error.message)
-      : "We could not load your saved sessions. Check your connection and try again.";
-
-  setLoadError(errorMessage);
-} finally {
-      setIsLoading(false);
-    }
-  };
+  setLoadError(
+      "Could not load your saved sessions. Please try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     void loadSessions();
