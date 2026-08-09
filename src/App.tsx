@@ -53,6 +53,7 @@ const questions = getQuestionsForSession(mode, resumeSkills);
 const question = questions[questionIndex];
 const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 const [isAuthenticated, setIsAuthenticated] = useState(false);
+const [userEmail, setUserEmail] = useState("");
 const [sessionSaveError, setSessionSaveError] = useState("");
 
   const startSession = () => {
@@ -161,6 +162,7 @@ useEffect(() => {
     } = await supabase.auth.getSession();
 
     setIsAuthenticated(Boolean(session));
+    setUserEmail(session?.user.email ?? "");
     setIsCheckingAuth(false);
   };
 
@@ -170,10 +172,18 @@ useEffect(() => {
     data: { subscription },
   } = supabase.auth.onAuthStateChange((_event, session) => {
     setIsAuthenticated(Boolean(session));
+    setUserEmail(session?.user.email ?? "");
   });
 
   return () => subscription.unsubscribe();
 }, []);  
+const handleSignOut = async () => {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Could not sign out:", error);
+  }
+};
 
 useEffect(() => {
   if (!isRecording) return;
@@ -200,7 +210,12 @@ if (!isAuthenticated) {
   return (
     <main className="min-h-screen bg-[#faf5ff] px-4 py-5 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto grid min-h-[calc(100vh-2.5rem)] max-w-7xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_70px_rgba(76,29,149,0.14)] lg:grid-cols-[220px_1fr]">
-        <Sidebar screen={screen} onNavigate={setScreen} />
+        <Sidebar
+  screen={screen}
+  onNavigate={setScreen}
+  userEmail={userEmail}
+  onSignOut={() => void handleSignOut()}
+/>
         {screen === "setup" ? (
           <SetupScreen mode={mode} role={role} company={company} question={question} setMode={setMode} setRole={setRole} setCompany={setCompany} onStart={startSession} resumeFile={resumeFile}
   resumeError={resumeError}
