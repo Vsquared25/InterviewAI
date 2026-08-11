@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -7,11 +8,13 @@ import {
 } from "lucide-react";
 import type { InterviewMode } from "../data/interviewData";
 import { analyzeAnswers } from "../lib/answerFeedback";
+import { getAiFeedback } from "../lib/aiFeedback";
 
 import type { AnswerRecord } from "../types/interview";
 
 export function CompleteScreen({
   role,
+  company,
   mode,
   answer,
   onPracticeAgain,
@@ -20,6 +23,7 @@ export function CompleteScreen({
   saveError
 }: {
   role: string;
+  company:string;
   mode: InterviewMode;
   answer: string;
   onPracticeAgain: () => void;
@@ -29,6 +33,49 @@ export function CompleteScreen({
 }) {
   const hasNotes = answer.trim().length > 0;
   const feedback = analyzeAnswers(answers);
+
+  const [aiFeedback, setAiFeedback] = useState("");
+const [aiFeedbackError, setAiFeedbackError] = useState("");
+const [isLoadingAiFeedback, setIsLoadingAiFeedback] = useState(true);
+
+
+useEffect(() => {
+  let isCancelled = false;
+
+  const loadAiFeedback = async () => {
+    try {
+      const generatedFeedback = await getAiFeedback({
+        role,
+        company,
+        mode,
+        answers,
+      });
+
+      if (!isCancelled) {
+        setAiFeedback(generatedFeedback);
+      }
+    } catch {
+      if (!isCancelled) {
+        setAiFeedbackError(
+          "AI feedback is unavailable right now. Your practice feedback below is still ready.",
+        );
+      }
+    } finally {
+      if (!isCancelled) {
+        setIsLoadingAiFeedback(false);
+      }
+    }
+  };
+
+  const requestTimer = window.setTimeout(() => {
+    void loadAiFeedback();
+  }, 0);
+
+  return () => {
+    isCancelled = true;
+    window.clearTimeout(requestTimer);
+  };
+}, [answers, company, mode, role]);
 
   return (
     <section className="animate-in p-5 sm:p-8 lg:p-10">
@@ -71,10 +118,22 @@ export function CompleteScreen({
             <p className="font-semibold">Your reflection</p>
           </div>
 
-          <p className="mt-5 max-w-2xl font-[Lexend] text-xl font-semibold leading-8 tracking-[-0.02em]">
-            Your feedback is based on the responses you saved in this session. Use the
-patterns below as a starting point for your next practice round.
-          </p>
+          {isLoadingAiFeedback ? (
+  <p className="mt-5 max-w-2xl font-[Lexend] text-xl font-semibold leading-8 tracking-[-0.02em]">
+    Creating personalized feedback from your responses…
+  </p>
+) : aiFeedback ? (
+  <p className="mt-5 max-w-2xl whitespace-pre-wrap text-lg leading-8 text-violet-50">
+    {aiFeedback}
+  </p>
+) : (
+  <p
+    role="alert"
+    className="mt-5 max-w-2xl text-lg leading-8 text-violet-100"
+  >
+    {aiFeedbackError}
+  </p>
+)}
         </section>
         {feedback.fillerPhrases.length > 0 && (
   <section className="mt-6 rounded-3xl border border-violet-100 p-6 sm:p-8">

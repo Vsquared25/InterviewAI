@@ -243,6 +243,7 @@ totalQuestions={questions.length}
         ) : screen === "complete" ? (
   <CompleteScreen
     role={role}
+    company={company}
     mode={mode}
     answer={answer}
     answers={answers}
