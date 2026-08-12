@@ -43,29 +43,46 @@ useEffect(() => {
   let isCancelled = false;
 
   const loadAiFeedback = async () => {
-    try {
-      const generatedFeedback = await getAiFeedback({
-        role,
-        company,
-        mode,
-        answers,
-      });
+  try {
+    const feedbackRequest = getAiFeedback({
+      role,
+      company,
+      mode,
+      answers,
+    });
 
-      if (!isCancelled) {
-        setAiFeedback(generatedFeedback);
-      }
-    } catch {
-      if (!isCancelled) {
-        setAiFeedbackError(
-          "AI feedback is unavailable right now. Your practice feedback below is still ready.",
-        );
-      }
-    } finally {
-      if (!isCancelled) {
-        setIsLoadingAiFeedback(false);
-      }
+    let timeoutId: number | undefined;
+
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error("AI feedback timed out."));
+      }, 30_000);
+    });
+
+    const generatedFeedback = await Promise.race([
+      feedbackRequest,
+      timeout,
+    ]);
+
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
     }
-  };
+
+    if (!isCancelled) {
+      setAiFeedback(generatedFeedback);
+    }
+  } catch {
+    if (!isCancelled) {
+      setAiFeedbackError(
+        "AI feedback is unavailable right now. Your practice feedback below is still ready.",
+      );
+    }
+  } finally {
+    if (!isCancelled) {
+      setIsLoadingAiFeedback(false);
+    }
+  }
+};
 
   const requestTimer = window.setTimeout(() => {
     void loadAiFeedback();
