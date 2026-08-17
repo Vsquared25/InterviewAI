@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# InterviewAI
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+InterviewAI is a low-pressure mock interview practice app for college students and early-career candidates. It provides personalized interview questions, timed practice, AI-generated feedback, and saved progress.
 
-Currently, two official plugins are available:
+**Live demo:** https://interview-ai-sepia-six.vercel.app/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Behavioral and technical mock interview modes
+- Role and company-based question personalization
+- Resume upload and skill extraction from PDF or DOCX files
+- Timed responses with question progression
+- Typed-answer feedback, including filler-word detection
+- AI-generated interview feedback
+- Supabase email/password authentication
+- Saved interview sessions and progress history
+- Session-detail view for reviewing past responses
+- Responsive Vite + React interface
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the Oxlint configuration
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Supabase Auth and Postgres
+- Supabase Edge Functions
+- OpenAI Responses API
+- pdfjs-dist and Mammoth for resume parsing
+- Vercel for deployment
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Run locally
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+1. Clone the repository.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+2. Install dependencies:
+
+   ```bash
+   npm install
