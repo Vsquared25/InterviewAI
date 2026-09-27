@@ -16,6 +16,7 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import type { AnswerRecord } from "./types/interview";
 import { AuthScreen } from "./components/AuthScreen";
 import { supabase } from "./lib/supabase";
+import { type CareerField } from "./data/careerData";
 
 /*
 THESIS: A practice studio, not a report card; the interview screen keeps the candidate focused on one spoken answer.
@@ -31,9 +32,12 @@ FORM: Operate dashboard extension; the setup panel transitions into a dedicated 
 
 
 function App() {
+  const [careerField, setCareerField] = useState<CareerField>(
+  "Technology and Computing",
+);
   const [mode, setMode] = useState<InterviewMode>("Behavioral");
   const [role, setRole] = useState("Software Engineering Intern");
-  const [company, setCompany] = useState("Any company");
+  const [company, setCompany] = useState("Any employer");
   const [screen, setScreen] = useState<Screen>("setup");
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -48,7 +52,12 @@ const [resumeText, setResumeText] = useState("");
 const [isParsingResume, setIsParsingResume] = useState(false);
 const resumeSkills = findResumeSkills(resumeText);
 
-const questions = getQuestionsForSession(mode, resumeSkills);
+const questions = getQuestionsForSession(
+  mode,
+  resumeSkills,
+  careerField,
+  role,
+);
 
 const question = questions[questionIndex];
 const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -217,7 +226,9 @@ if (!isAuthenticated) {
   onSignOut={() => void handleSignOut()}
 />
         {screen === "setup" ? (
-          <SetupScreen mode={mode} role={role} company={company} question={question} setMode={setMode} setRole={setRole} setCompany={setCompany} onStart={startSession} resumeFile={resumeFile}
+          <SetupScreen careerField={careerField}
+  setCareerField={setCareerField}
+  mode={mode} role={role} company={company} question={question} setMode={setMode} setRole={setRole} setCompany={setCompany} onStart={startSession} resumeFile={resumeFile}
   resumeError={resumeError}
   onResumeChange={handleResumeChange} resumeText={resumeText}
 isParsingResume={isParsingResume} resumeSkills={resumeSkills}/>

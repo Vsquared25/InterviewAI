@@ -1,4 +1,6 @@
 import type { AnswerRecord } from "../types/interview";
+import type { InterviewMode } from "../data/interviewData";
+import { nextStepByMode } from "../data/feedbackGuidance";
 
 const actionWords = [
   "built",
@@ -54,7 +56,7 @@ export function findFillerPhrases(
     .filter((fillerPhrase) => fillerPhrase.count > 0);
 }
 
-export function analyzeAnswers(answers: AnswerRecord[]) {
+export function analyzeAnswers(answers: AnswerRecord[], mode: InterviewMode) {
   const combinedAnswers = answers
     .map((answerRecord) => answerRecord.answer)
     .join(" ");
@@ -78,31 +80,35 @@ export function analyzeAnswers(answers: AnswerRecord[]) {
 
   const strengths = [];
 
-  if (wordCount >= 80) {
-    strengths.push({
-      title: "You added useful detail",
-      detail:
-        "Your responses include enough context for an interviewer to follow your example.",
-    });
-  }
+if (wordCount >= 80) {
+  strengths.push({
+    title: "You have material to refine",
+    detail:
+      `Your responses contain ${wordCount} words. Review them for clarity, relevance, and unnecessary repetition.`,
+  });
+}
 
-  if (hasAction) {
-    strengths.push({
-      title: "You described your contribution",
-      detail:
-        "Your responses include action-focused language that helps show what you did.",
-    });
-  }
+if (
+  hasAction &&
+  (mode === "Behavioral" ||
+    mode === "Portfolio / Project Discussion")
+) {
+  strengths.push({
+    title: "You used action-focused language",
+    detail:
+      "Check that your examples clearly distinguish your individual contribution from the team's work.",
+  });
+}
 
-  if (strengths.length === 0) {
-    strengths.push({
-      title: "You completed the full practice session",
-      detail:
-        "You now have a starting point to revisit and make more specific.",
-    });
-  }
+if (strengths.length === 0) {
+  strengths.push({
+    title: "You reached the reflection stage",
+    detail:
+      "Use the guidance below to develop your responses and prepare for another practice session.",
+  });
+}
 
-  const nextStep = hasResult
+  const behavioralNextStep = hasResult
     ? {
         title: "Make your actions even more specific",
         detail:
@@ -113,6 +119,11 @@ export function analyzeAnswers(answers: AnswerRecord[]) {
         detail:
           "End each story with an outcome, number, or lesson learned so the interviewer understands the impact.",
       };
+
+      const nextStep =
+  mode === "Behavioral"
+    ? behavioralNextStep
+    : nextStepByMode[mode];
 
   return {
     strengths: strengths.slice(0, 2),

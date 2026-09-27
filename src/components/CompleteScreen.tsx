@@ -32,7 +32,7 @@ export function CompleteScreen({
   saveError: string;
 }) {
   const hasNotes = answer.trim().length > 0;
-  const feedback = analyzeAnswers(answers);
+  const feedback = analyzeAnswers(answers, mode);
 
   const [aiFeedback, setAiFeedback] = useState("");
 const [aiFeedbackError, setAiFeedbackError] = useState("");

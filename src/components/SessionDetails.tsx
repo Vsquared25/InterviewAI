@@ -14,7 +14,7 @@ export function SessionDetails({
   session: SavedSession;
   onBack: () => void;
 }) {
-  const feedback = analyzeAnswers(session.answers);
+  const feedback = analyzeAnswers(session.answers, session.mode);
 
   return (
     <section className="animate-in p-5 sm:p-8 lg:p-10">
