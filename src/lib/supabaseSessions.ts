@@ -4,7 +4,7 @@ import type { SavedSession } from "../types/interview";
 export async function getCloudSessions(): Promise<SavedSession[]> {
   const { data, error } = await supabase
     .from("interview_sessions")
-    .select("id, completed_at, mode, role, company, answers, resume_skills")
+    .select("id, completed_at, mode, role, company, answers, resume_skills, recording_path")
     .order("completed_at", { ascending: false });
 
   if (error) {
@@ -19,6 +19,7 @@ export async function getCloudSessions(): Promise<SavedSession[]> {
     company: session.company,
     answers: session.answers,
     resumeSkills: session.resume_skills ?? [],
+    recordingPath: session.recording_path ?? null,
   }));
 }
 
@@ -45,6 +46,7 @@ export async function saveCloudSession(session: SavedSession) {
     company: session.company,
     answers: session.answers,
     resume_skills: session.resumeSkills,
+    recording_path: session.recordingPath ?? null,
   });
 
   if (error) {

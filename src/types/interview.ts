@@ -13,4 +13,5 @@ export type SavedSession = {
   company: string;
   answers: AnswerRecord[];
   resumeSkills: string[];
+  recordingPath?: string | null;
 };

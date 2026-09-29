@@ -17,6 +17,12 @@ import type { AnswerRecord } from "./types/interview";
 import { AuthScreen } from "./components/AuthScreen";
 import { supabase } from "./lib/supabase";
 import { type CareerField } from "./data/careerData";
+import { getAiFollowUp } from "./lib/aiFeedback";
+import {
+  deleteInterviewRecording,
+  uploadInterviewRecording,
+} from "./lib/sessionRecordings";
+import type { InterviewRecording } from "./lib/interviewRecorder";
 
 /*
 THESIS: A practice studio, not a report card; the interview screen keeps the candidate focused on one spoken answer.
@@ -42,8 +48,12 @@ function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [answer, setAnswer] = useState("");
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [completedRecording, setCompletedRecording] = useState<InterviewRecording | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 const [resumeError, setResumeError] = useState("");
@@ -59,7 +69,7 @@ const questions = getQuestionsForSession(
   role,
 );
 
-const question = questions[questionIndex];
+const question = followUpQuestion ?? questions[questionIndex];
 const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 const [isAuthenticated, setIsAuthenticated] = useState(false);
 const [userEmail, setUserEmail] = useState("");
@@ -71,37 +81,106 @@ const [sessionSaveError, setSessionSaveError] = useState("");
     setAnswer("");
     setElapsedSeconds(0);
     setQuestionIndex(0);
+    setFollowUpQuestion(null);
     setAnswers([]);
     setSessionSaveError("");
+    setCompletedRecording(null);
+    setUploadProgress(null);
+    setSessionId(crypto.randomUUID());
   };
 
-const finishResponse = async () => {
+const finishResponse = async (
+  finalTranscript: string,
+  finishRecording: () => Promise<InterviewRecording | null>,
+) => {
   setIsRecording(false);
 
   const completedAnswer = {
     question,
-    answer: answer.trim(),
+    answer: finalTranscript.trim(),
   };
 
   const completedAnswers = [...answers, completedAnswer];
   setAnswers(completedAnswers);
 
+  // Ask one follow-up after a main question, but not after a follow-up.
+  if (followUpQuestion === null) {
+    try {
+      const generatedFollowUp = await getAiFollowUp({
+        role,
+        company,
+        mode,
+        question: completedAnswer.question,
+        answer: completedAnswer.answer,
+      });
+
+      if (generatedFollowUp.trim()) {
+        setFollowUpQuestion(generatedFollowUp.trim());
+        setAnswer("");
+        setElapsedSeconds(0);
+        return;
+      }
+    } catch (error) {
+      // Keep the interview moving if the AI service is unavailable.
+      console.error("Could not generate an interview follow-up:", error);
+    }
+  }
+
+  // We've answered a follow-up (or generation failed), so advance normally.
+  setFollowUpQuestion(null);
+
   const isLastQuestion = questionIndex === questions.length - 1;
 
   if (isLastQuestion) {
-    setSessionSaveError("");
+    const currentSessionId = sessionId ?? crypto.randomUUID();
+    let recordingPath: string | null = null;
+    let recordingWarning = "";
+
+    try {
+      const recording = await finishRecording();
+
+      if (recording) {
+        setCompletedRecording(recording);
+        setUploadProgress(0);
+        recordingPath = await uploadInterviewRecording(
+          currentSessionId,
+          recording.blob,
+          setUploadProgress,
+        );
+      }
+    } catch (error) {
+      console.error("Could not save interview recording:", error);
+      recordingWarning = error instanceof Error && error.message.includes("45 MB")
+        ? "Your responses were saved, but the recording exceeded the 45 MB limit and was not uploaded."
+        : "Your responses were saved, but the recording could not be saved.";
+    } finally {
+      setUploadProgress(null);
+    }
 
     try {
       await saveCloudSession({
-        id: crypto.randomUUID(),
+        id: currentSessionId,
         completedAt: new Date().toISOString(),
         mode,
         role,
         company,
         answers: completedAnswers,
         resumeSkills,
+        recordingPath,
       });
-    } catch {
+
+      setSessionSaveError(recordingWarning);
+    } catch (error) {
+      console.error("Could not save interview session:", error);
+
+      if (recordingPath) {
+        try {
+          await deleteInterviewRecording(recordingPath);
+        } catch (cleanupError) {
+          console.error("Could not remove orphaned recording:", cleanupError);
+        }
+      }
+
       setSessionSaveError(
         "Your feedback is ready, but this session could not be saved to your account.",
       );
@@ -250,6 +329,7 @@ totalQuestions={questions.length}
   setScreen("setup");
 }}
   onFinish={finishResponse}
+  uploadProgress={uploadProgress}
 />
         ) : screen === "complete" ? (
   <CompleteScreen
@@ -261,6 +341,7 @@ totalQuestions={questions.length}
     onPracticeAgain={startSession}
     onBack={() => setScreen("setup")}
     saveError={sessionSaveError}
+    recording={completedRecording}
   />
 ) : (
   <ProgressScreen onBackToPractice={() => setScreen("setup")} />

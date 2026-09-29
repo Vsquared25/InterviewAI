@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -5,6 +6,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { analyzeAnswers } from "../lib/answerFeedback";
+import { downloadInterviewRecording } from "../lib/sessionRecordings";
 import type { SavedSession } from "../types/interview";
 
 export function SessionDetails({
@@ -15,6 +17,52 @@ export function SessionDetails({
   onBack: () => void;
 }) {
   const feedback = analyzeAnswers(session.answers, session.mode);
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [isLoadingRecording, setIsLoadingRecording] = useState(false);
+  const [recordingError, setRecordingError] = useState("");
+  const requestIdRef = useRef(0);
+
+  useEffect(() => () => {
+    requestIdRef.current += 1;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+    };
+  }, [recordingUrl]);
+
+  useEffect(() => {
+    requestIdRef.current += 1;
+    setRecordingUrl(null);
+    setRecordingError("");
+    setIsLoadingRecording(false);
+  }, [session.id]);
+
+  const loadRecording = async () => {
+    if (!session.recordingPath || isLoadingRecording) return;
+
+    setIsLoadingRecording(true);
+    setRecordingError("");
+    const requestId = ++requestIdRef.current;
+
+    try {
+      const url = await downloadInterviewRecording(session.recordingPath);
+      if (requestId !== requestIdRef.current) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      setRecordingUrl(url);
+    } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+      console.error("Could not load saved recording:", error);
+      setRecordingError(
+        "This recording could not be loaded. Check your connection and try again.",
+      );
+    } finally {
+      if (requestId === requestIdRef.current) setIsLoadingRecording(false);
+    }
+  };
 
   return (
     <section className="animate-in p-5 sm:p-8 lg:p-10">
@@ -46,6 +94,41 @@ export function SessionDetails({
         </div>
       </div>
 
+      {session.recordingPath && (
+        <section className="mt-8 rounded-3xl border border-violet-100 p-6 sm:p-8">
+          <h2 className="font-[Lexend] text-xl font-semibold text-slate-950">
+            Your interview recording
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            This private recording loads only when you choose to play it.
+          </p>
+          {!recordingUrl && (
+            <button
+              type="button"
+              onClick={() => void loadRecording()}
+              disabled={isLoadingRecording}
+              className="mt-4 rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white hover:bg-violet-800 disabled:opacity-60"
+            >
+              {isLoadingRecording ? "Loading recording…" : "Load recording"}
+            </button>
+          )}
+          {recordingError && (
+            <p role="alert" className="mt-3 text-sm font-semibold text-pink-700">
+              {recordingError}
+            </p>
+          )}
+          {recordingUrl && (
+            <video
+              controls
+              playsInline
+              src={recordingUrl}
+              className="mt-5 aspect-video w-full rounded-xl bg-slate-950"
+              aria-label="Saved interview recording"
+            />
+          )}
+        </section>
+      )}
+
       <section className="mt-10">
         <p className="text-sm font-semibold text-violet-700">
           Your saved responses
@@ -66,7 +149,7 @@ export function SessionDetails({
               </h2>
 
               <p className="mt-4 whitespace-pre-wrap leading-7 text-slate-600">
-                {answerRecord.answer || "No typed notes were saved for this response."}
+                {answerRecord.answer || "No transcript was saved for this response."}
               </p>
             </article>
           ))}

@@ -9,6 +9,8 @@ import {
 import type { InterviewMode } from "../data/interviewData";
 import { analyzeAnswers } from "../lib/answerFeedback";
 import { getAiFeedback } from "../lib/aiFeedback";
+import type { InterviewRecording } from "../lib/interviewRecorder";
+import { sampleRecordingFrames } from "../lib/videoFeedback";
 
 import type { AnswerRecord } from "../types/interview";
 
@@ -20,7 +22,8 @@ export function CompleteScreen({
   onPracticeAgain,
   onBack,
   answers,
-  saveError
+  saveError,
+  recording,
 }: {
   role: string;
   company:string;
@@ -30,6 +33,7 @@ export function CompleteScreen({
   onBack: () => void;
   answers: AnswerRecord[];
   saveError: string;
+  recording: InterviewRecording | null;
 }) {
   const hasNotes = answer.trim().length > 0;
   const feedback = analyzeAnswers(answers, mode);
@@ -44,11 +48,28 @@ useEffect(() => {
 
   const loadAiFeedback = async () => {
   try {
+    let frames: string[] = recording?.frames ?? [];
+    if (recording) {
+      if (!frames.length) {
+        try {
+          frames = await sampleRecordingFrames(recording.blob);
+        } catch (error) {
+          console.warn("Video frames could not be sampled; using available delivery signals.", error);
+        }
+      }
+    }
+
+    if (isCancelled) return;
+
     const feedbackRequest = getAiFeedback({
       role,
       company,
       mode,
       answers,
+      mediaSample: recording ? {
+        frames,
+        deliveryMetrics: recording.deliveryMetrics,
+      } : null,
     });
 
     let timeoutId: number | undefined;
@@ -59,13 +80,11 @@ useEffect(() => {
       }, 30_000);
     });
 
-    const generatedFeedback = await Promise.race([
-      feedbackRequest,
-      timeout,
-    ]);
-
-    if (timeoutId !== undefined) {
-      window.clearTimeout(timeoutId);
+    let generatedFeedback: string;
+    try {
+      generatedFeedback = await Promise.race([feedbackRequest, timeout]);
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     }
 
     if (!isCancelled) {
@@ -92,7 +111,7 @@ useEffect(() => {
     isCancelled = true;
     window.clearTimeout(requestTimer);
   };
-}, [answers, company, mode, role]);
+}, [answers, company, mode, recording, role]);
 
   return (
     <section className="animate-in p-5 sm:p-8 lg:p-10">
@@ -122,12 +141,12 @@ useEffect(() => {
           You completed {answers.length}{" "}
 {answers.length === 1 ? "response" : "responses"} in this{" "}
 {mode.toLowerCase()} practice session for a {role} interview.
-{saveError && (
-  <p role="alert" className="mt-4 text-sm font-semibold text-pink-700">
-    {saveError}
-  </p>
-)}
         </p>
+        {saveError && (
+          <p role="alert" className="mt-4 text-sm font-semibold text-pink-700">
+            {saveError}
+          </p>
+        )}
 
         <section className="mt-8 rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8">
           <div className="flex items-center gap-2 text-violet-200">
@@ -157,7 +176,7 @@ useEffect(() => {
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p className="text-sm font-semibold text-violet-700">
-          Typed-note pattern
+          Spoken-response pattern
         </p>
 
         <h2 className="mt-1 font-[Lexend] text-xl font-semibold tracking-[-0.02em]">
@@ -240,7 +259,7 @@ useEffect(() => {
 
         {hasNotes && (
           <section className="mt-6 rounded-2xl border border-violet-100 p-5">
-            <p className="font-semibold text-slate-900">Your response notes</p>
+            <p className="font-semibold text-slate-900">Your response transcript</p>
 
             <p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">
               {answer}
