@@ -7,19 +7,26 @@ import {
 } from "lucide-react";
 import { analyzeAnswers } from "../lib/answerFeedback";
 import { downloadInterviewRecording } from "../lib/sessionRecordings";
+import { deleteCloudSessionRecording } from "../lib/supabaseSessions";
 import type { SavedSession } from "../types/interview";
 
 export function SessionDetails({
   session,
   onBack,
+  onRecordingDeleted,
 }: {
   session: SavedSession;
   onBack: () => void;
+  onRecordingDeleted: () => void;
 }) {
   const feedback = analyzeAnswers(session.answers, session.mode);
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
   const [isLoadingRecording, setIsLoadingRecording] = useState(false);
   const [recordingError, setRecordingError] = useState("");
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isDeletingRecording, setIsDeletingRecording] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [recordingRemoved, setRecordingRemoved] = useState(false);
   const requestIdRef = useRef(0);
 
   useEffect(() => () => {
@@ -37,7 +44,7 @@ export function SessionDetails({
     setRecordingUrl(null);
     setRecordingError("");
     setIsLoadingRecording(false);
-  }, [session.id]);
+  }, [session.id, session.recordingPath]);
 
   const loadRecording = async () => {
     if (!session.recordingPath || isLoadingRecording) return;
@@ -61,6 +68,24 @@ export function SessionDetails({
       );
     } finally {
       if (requestId === requestIdRef.current) setIsLoadingRecording(false);
+    }
+  };
+
+  const deleteRecording = async () => {
+    if (!session.recordingPath || isDeletingRecording) return;
+    setIsDeletingRecording(true);
+    setDeleteError("");
+
+    try {
+      await deleteCloudSessionRecording(session);
+      setRecordingUrl(null);
+      setRecordingRemoved(true);
+      setIsConfirmingDelete(false);
+      onRecordingDeleted();
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "The recording could not be deleted. Please try again.");
+    } finally {
+      setIsDeletingRecording(false);
     }
   };
 
@@ -94,15 +119,21 @@ export function SessionDetails({
         </div>
       </div>
 
-      {session.recordingPath && (
+      {(session.recordingPath || recordingRemoved) && (
         <section className="mt-8 rounded-3xl border border-violet-100 p-6 sm:p-8">
           <h2 className="font-[Lexend] text-xl font-semibold text-slate-950">
             Your interview recording
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            This private recording loads only when you choose to play it.
-          </p>
-          {!recordingUrl && (
+          {recordingRemoved ? (
+            <p role="status" className="mt-2 text-sm font-semibold text-violet-800">
+              Recording deleted. Your response transcripts remain saved.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              This private recording loads only when you choose to play it.
+            </p>
+          )}
+          {session.recordingPath && !recordingUrl && (
             <button
               type="button"
               onClick={() => void loadRecording()}
@@ -117,7 +148,7 @@ export function SessionDetails({
               {recordingError}
             </p>
           )}
-          {recordingUrl && (
+          {session.recordingPath && recordingUrl && (
             <video
               controls
               playsInline
@@ -126,6 +157,41 @@ export function SessionDetails({
               aria-label="Saved interview recording"
             />
           )}
+          {session.recordingPath && !isConfirmingDelete && (
+            <button
+              type="button"
+              onClick={() => setIsConfirmingDelete(true)}
+              className="mt-4 block text-sm font-semibold text-pink-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700"
+            >
+              Delete recording
+            </button>
+          )}
+          {session.recordingPath && isConfirmingDelete && (
+            <div className="mt-4 rounded-xl bg-pink-50 p-4">
+              <p className="text-sm font-semibold text-pink-900">
+                Delete this recording permanently? Your response transcripts will stay saved.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => void deleteRecording()}
+                  disabled={isDeletingRecording}
+                  className="rounded-xl bg-pink-700 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-800 disabled:opacity-60"
+                >
+                  {isDeletingRecording ? "Deleting…" : "Yes, delete recording"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingDelete(false)}
+                  disabled={isDeletingRecording}
+                  className="rounded-xl border border-pink-200 px-4 py-2 text-sm font-semibold text-pink-900 hover:bg-white disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {deleteError && <p role="alert" className="mt-3 text-sm font-semibold text-pink-700">{deleteError}</p>}
         </section>
       )}
 

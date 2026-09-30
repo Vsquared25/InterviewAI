@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getQuestionsForSession,
   type InterviewMode,
@@ -54,6 +54,9 @@ function App() {
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [completedRecording, setCompletedRecording] = useState<InterviewRecording | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const activeUserIdRef = useRef<string | null>(null);
+  const sessionGenerationRef = useRef(0);
+  const resumeRequestIdRef = useRef(0);
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 const [resumeError, setResumeError] = useState("");
@@ -75,7 +78,32 @@ const [isAuthenticated, setIsAuthenticated] = useState(false);
 const [userEmail, setUserEmail] = useState("");
 const [sessionSaveError, setSessionSaveError] = useState("");
 
+  const clearPrivateSession = () => {
+    sessionGenerationRef.current += 1;
+    resumeRequestIdRef.current += 1;
+    setScreen("setup");
+    setCareerField("Technology and Computing");
+    setMode("Behavioral");
+    setRole("Software Engineering Intern");
+    setCompany("Any employer");
+    setIsRecording(false);
+    setElapsedSeconds(0);
+    setQuestionIndex(0);
+    setSessionId(null);
+    setFollowUpQuestion(null);
+    setAnswer("");
+    setAnswers([]);
+    setCompletedRecording(null);
+    setUploadProgress(null);
+    setResumeFile(null);
+    setResumeText("");
+    setResumeError("");
+    setIsParsingResume(false);
+    setSessionSaveError("");
+  };
+
   const startSession = () => {
+    sessionGenerationRef.current += 1;
     setScreen("interview");
     setIsRecording(false);
     setAnswer("");
@@ -93,6 +121,8 @@ const finishResponse = async (
   finalTranscript: string,
   finishRecording: () => Promise<InterviewRecording | null>,
 ) => {
+  const sessionGeneration = sessionGenerationRef.current;
+  const sessionUserId = activeUserIdRef.current;
   setIsRecording(false);
 
   const completedAnswer = {
@@ -114,6 +144,8 @@ const finishResponse = async (
         answer: completedAnswer.answer,
       });
 
+      if (sessionGeneration !== sessionGenerationRef.current) return;
+
       if (generatedFollowUp.trim()) {
         setFollowUpQuestion(generatedFollowUp.trim());
         setAnswer("");
@@ -121,6 +153,7 @@ const finishResponse = async (
         return;
       }
     } catch (error) {
+      if (sessionGeneration !== sessionGenerationRef.current) return;
       // Keep the interview moving if the AI service is unavailable.
       console.error("Could not generate an interview follow-up:", error);
     }
@@ -132,12 +165,14 @@ const finishResponse = async (
   const isLastQuestion = questionIndex === questions.length - 1;
 
   if (isLastQuestion) {
+    if (!sessionUserId) return;
     const currentSessionId = sessionId ?? crypto.randomUUID();
     let recordingPath: string | null = null;
     let recordingWarning = "";
 
     try {
       const recording = await finishRecording();
+      if (sessionGeneration !== sessionGenerationRef.current) return;
 
       if (recording) {
         setCompletedRecording(recording);
@@ -147,8 +182,10 @@ const finishResponse = async (
           recording.blob,
           setUploadProgress,
         );
+        if (sessionGeneration !== sessionGenerationRef.current) return;
       }
     } catch (error) {
+      if (sessionGeneration !== sessionGenerationRef.current) return;
       console.error("Could not save interview recording:", error);
       recordingWarning = error instanceof Error && error.message.includes("45 MB")
         ? "Your responses were saved, but the recording exceeded the 45 MB limit and was not uploaded."
@@ -167,10 +204,13 @@ const finishResponse = async (
         answers: completedAnswers,
         resumeSkills,
         recordingPath,
-      });
+      }, sessionUserId);
+
+      if (sessionGeneration !== sessionGenerationRef.current) return;
 
       setSessionSaveError(recordingWarning);
     } catch (error) {
+      if (sessionGeneration !== sessionGenerationRef.current) return;
       console.error("Could not save interview session:", error);
 
       if (recordingPath) {
@@ -196,6 +236,7 @@ const finishResponse = async (
 };
 
 const handleResumeChange = async (file: File | undefined) => {
+  const requestId = ++resumeRequestIdRef.current;
   setResumeError("");
   setResumeText("");
 
@@ -224,6 +265,7 @@ const handleResumeChange = async (file: File | undefined) => {
 
   try {
     const extractedText = await extractResumeText(file);
+    if (requestId !== resumeRequestIdRef.current) return;
 
     if (!extractedText) {
       setResumeError(
@@ -234,33 +276,28 @@ const handleResumeChange = async (file: File | undefined) => {
 
     setResumeText(extractedText);
   } catch {
+    if (requestId !== resumeRequestIdRef.current) return;
     setResumeFile(null);
     setResumeError(
       "We could not read that resume. Try a different PDF or DOCX file.",
     );
   } finally {
-    setIsParsingResume(false);
+    if (requestId === resumeRequestIdRef.current) setIsParsingResume(false);
   }
 };
 
 useEffect(() => {
-  const checkSession = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    setIsAuthenticated(Boolean(session));
-    setUserEmail(session?.user.email ?? "");
-    setIsCheckingAuth(false);
-  };
-
-  void checkSession();
-
   const {
     data: { subscription },
   } = supabase.auth.onAuthStateChange((_event, session) => {
+    const nextUserId = session?.user.id ?? null;
+    if (nextUserId !== activeUserIdRef.current) {
+      clearPrivateSession();
+      activeUserIdRef.current = nextUserId;
+    }
     setIsAuthenticated(Boolean(session));
     setUserEmail(session?.user.email ?? "");
+    setIsCheckingAuth(false);
   });
 
   return () => subscription.unsubscribe();
@@ -292,7 +329,7 @@ if (isCheckingAuth) {
 }
 
 if (!isAuthenticated) {
-  return <AuthScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+  return <AuthScreen />;
 }
 
   return (

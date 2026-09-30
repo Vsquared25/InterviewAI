@@ -47,6 +47,12 @@ export function ProgressScreen({
       <SessionDetails
         session={selectedSession}
         onBack={() => setSelectedSession(null)}
+        onRecordingDeleted={() => {
+          setSessions((current) => current.map((item) =>
+            item.id === selectedSession.id ? { ...item, recordingPath: null } : item,
+          ));
+          setSelectedSession((current) => current ? { ...current, recordingPath: null } : null);
+        }}
       />
     );
   }

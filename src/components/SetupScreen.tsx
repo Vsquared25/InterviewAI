@@ -13,7 +13,8 @@ import {
 } from "../data/careerData";
 
 import { modes, type InterviewMode } from "../data/interviewData";
-import { Field, Metric } from "./SetupHelpers";
+import { supportsSpeechRecognition } from "../lib/speechRecognition";
+import { Field } from "./SetupHelpers";
 
 export function SetupScreen({
   careerField,
@@ -50,9 +51,11 @@ export function SetupScreen({
   isParsingResume: boolean;
   resumeSkills: string[];
 }) {
+  const speechSupported = supportsSpeechRecognition();
   return <section className="p-5 sm:p-8 lg:p-10"><header className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-semibold text-violet-700">Today's practice plan</p><h1 className="mt-1 font-[Lexend] text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">Make your next answer count.</h1></div></header>
-    <section className="mt-8 grid gap-6 xl:grid-cols-[1.45fr_0.8fr]"><div className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8"><div className="flex items-center justify-between gap-4"><span className="inline-flex items-center gap-2 rounded-full bg-violet-500/20 px-3 py-1 text-sm font-semibold text-violet-100"><Sparkles size={16} aria-hidden="true" /> Practice queue</span><span className="flex items-center gap-2 text-sm text-violet-100"><Clock3 size={16} aria-hidden="true" /> 8–12 min</span></div><h2 className="mt-8 max-w-xl font-[Lexend] text-2xl font-semibold leading-tight tracking-[-0.03em] sm:text-3xl">One focused mock interview is enough to improve today.</h2><p className="mt-4 max-w-xl text-base leading-7 text-slate-300">Choose your target below. InterviewAI will tailor the first practice question to your goal.</p><button type="button" onClick={onStart} className="mt-8 inline-flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-3 font-semibold text-white transition hover:bg-pink-400">Set up a session <ArrowRight size={18} aria-hidden="true" /></button></div><div className="rounded-3xl bg-violet-50 p-6"><p className="font-[Lexend] text-lg font-semibold tracking-[-0.02em]">Practice momentum</p><div className="mt-6 space-y-5"><Metric value="0" label="Sessions completed" /><Metric value="—" label="Feedback score" /><Metric value="1" label="Question ready" /></div><p className="mt-6 border-t border-violet-200 pt-4 text-sm leading-6 text-violet-900">Representative data while your personal session history is being built.</p></div></section>
-    <section className="mt-8 rounded-3xl border border-violet-100 p-6 sm:p-8"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-semibold text-violet-700">Session setup</p><h2 className="mt-1 font-[Lexend] text-2xl font-semibold tracking-[-0.03em]">Practice for the interview you want.</h2></div><span className="inline-flex items-center gap-2 text-sm text-slate-600"><CheckCircle2 size={17} className="text-violet-600" aria-hidden="true" /> Local sample session</span></div><div className="mt-6 grid gap-5 md:grid-cols-3"><Field label="Career field">
+    <section className="mt-8 grid gap-6 xl:grid-cols-[1.45fr_0.8fr]"><div className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8"><div className="flex items-center justify-between gap-4"><span className="inline-flex items-center gap-2 rounded-full bg-violet-500/20 px-3 py-1 text-sm font-semibold text-violet-100"><Sparkles size={16} aria-hidden="true" /> Practice queue</span><span className="flex items-center gap-2 text-sm text-violet-100"><Clock3 size={16} aria-hidden="true" /> 8–12 min</span></div><h2 className="mt-8 max-w-xl font-[Lexend] text-2xl font-semibold leading-tight tracking-[-0.03em] sm:text-3xl">One focused mock interview is enough to improve today.</h2><p className="mt-4 max-w-xl text-base leading-7 text-slate-300">Choose your target below. InterviewAI will tailor the first practice question to your goal.</p><button type="button" onClick={onStart} disabled={!speechSupported || isParsingResume} className="mt-8 inline-flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-3 font-semibold text-white transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:opacity-60">Start practice session <ArrowRight size={18} aria-hidden="true" /></button></div><div className="rounded-3xl bg-violet-50 p-6"><p className="font-[Lexend] text-lg font-semibold tracking-[-0.02em]">Before you begin</p><ul className="mt-5 space-y-3 text-sm leading-6 text-violet-950"><li>Answer out loud; typing is not available in this beta.</li><li>Use desktop Chrome and allow microphone access.</li><li>Video recording is optional and can be deleted from history.</li></ul><p className="mt-5 border-t border-violet-200 pt-4 text-sm leading-6 text-violet-900">Your completed responses are saved to your account.</p></div></section>
+    {!speechSupported && <p role="alert" className="mt-4 rounded-xl bg-pink-50 px-4 py-3 text-sm font-semibold text-pink-800">This browser does not support the speech recognition needed for a voice-only session. Open InterviewAI in desktop Chrome to continue.</p>}
+    <section className="mt-8 rounded-3xl border border-violet-100 p-6 sm:p-8"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-semibold text-violet-700">Session setup</p><h2 className="mt-1 font-[Lexend] text-2xl font-semibold tracking-[-0.03em]">Practice for the interview you want.</h2></div><span className="inline-flex items-center gap-2 text-sm text-violet-800"><CheckCircle2 size={17} className="text-violet-600" aria-hidden="true" /> Completed sessions saved to your account</span></div><div className="mt-6 grid gap-5 md:grid-cols-3"><Field label="Career field">
   <select
     value={careerField}
     onChange={(event) => {
@@ -101,7 +104,7 @@ export function SetupScreen({
 
   <p className="mt-2 max-w-2xl leading-7 text-slate-600">
     Add a resume to help InterviewAI choose more relevant practice questions.
-    Your file stays local while we build this feature.
+    Your file is read in this browser; the file itself is not uploaded.
   </p>
 
   <label
@@ -120,7 +123,7 @@ export function SetupScreen({
 
         <p className="mt-1 text-sm text-violet-800">
           {resumeFile
-            ? `${(resumeFile.size / 1024 / 1024).toFixed(1)} MB · Ready for parsing next`
+            ? `${(resumeFile.size / 1024 / 1024).toFixed(1)} MB · ${isParsingResume ? "Reading locally…" : resumeText ? "Ready for questions" : "Check the message below"}`
             : "PDF or DOCX · Maximum 5 MB"}
         </p>
       </div>

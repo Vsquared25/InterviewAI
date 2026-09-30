@@ -6,11 +6,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
-export function AuthScreen({
-  onAuthenticated,
-}: {
-  onAuthenticated: () => void;
-}) {
+export function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +33,7 @@ export function AuthScreen({
       if (error) {
         setErrorMessage(error.message);
       } else if (data.session) {
-        onAuthenticated();
+        setMessage("Signing you in…");
       } else {
         setMessage(
           "Check your email to confirm your account, then return here to sign in.",
@@ -52,7 +48,7 @@ export function AuthScreen({
       if (error) {
         setErrorMessage(error.message);
       } else {
-        onAuthenticated();
+        setMessage("Signing you in…");
       }
     }
 
@@ -102,6 +98,9 @@ export function AuthScreen({
               {isSignUp
                 ? "Use your email to save your practice history across devices."
                 : "Sign in to continue where you left off."}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Voice-only beta: desktop Chrome and microphone access are recommended.
             </p>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>

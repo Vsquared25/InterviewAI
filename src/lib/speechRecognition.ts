@@ -38,6 +38,12 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: SpeechRecognitionConstructor;
 };
 
+export function supportsSpeechRecognition() {
+  if (typeof window === "undefined") return false;
+  const speechWindow = window as SpeechWindow;
+  return Boolean(speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition);
+}
+
 export function createSpeechRecognition() {
   const speechWindow = window as SpeechWindow;
 
